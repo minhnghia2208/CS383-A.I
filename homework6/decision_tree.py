@@ -233,10 +233,10 @@ class DecisionTree:
 
         if len(examples_r) > len(examples_l):
             return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r),
-                                self.learn_tree(examples_r))
+                                LeafNode(majority, pred_class_count, total))
         else:
             return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r),
-                                self.learn_tree(examples_l))
+                                LeafNode(majority, pred_class_count, total))
 
 
 
@@ -253,10 +253,8 @@ class DecisionTree:
         #
         # fill in the function body here!
         #
-        node = self.root
-        if type(node) == DecisionNode:
-            return node.classify(example)
-        return node.pred_class, node.prob
+
+        return self.root.classify(example)
             # return example[self.class_name], 0.6  # fix this line!
 
     def __str__(self):
@@ -266,7 +264,7 @@ class DecisionTree:
 
     def _ascii_tree(self, node):
         """Super high-tech tree-printing ascii-art madness."""
-        indent = 7  # adjust this to decrease or increase width of output 
+        indent = 7  # adjust this to decrease or increase width of output
         if type(node) == LeafNode:
             return [""], "leaf {} {}/{}={:.2f}".format(node.pred_class, node.pred_class_count, node.total_count,
                                                        node.prob), [""]
