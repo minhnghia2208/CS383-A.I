@@ -224,17 +224,22 @@ class DecisionTree:
         # create 2 new dicts
         examples_l = []
         examples_r = []
-        examples_m = []
         for dict in examples:
             if type(dict[IG_attr]) == float:
                 if dict[IG_attr] >= IG_thres:
                     examples_r.append(dict)
                 else:
                     examples_l.append(dict)
-            if type(dict[IG_attr]) is None:
-                examples_m.append(dict)
 
-        return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r), None)
+        if len(examples_r) > len(examples_l):
+            return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r),
+                                self.learn_tree(examples_r))
+        else:
+            return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r),
+                                self.learn_tree(examples_l))
+
+
+
         # return None  # fix this line!
 
     def classify(self, example):
@@ -248,8 +253,11 @@ class DecisionTree:
         #
         # fill in the function body here!
         #
-
-        return example[self.class_name], 0.6  # fix this line!
+        node = self.root
+        if type(node) == DecisionNode:
+            return node.classify(example)
+        return node.pred_class, node.prob
+            # return example[self.class_name], 0.6  # fix this line!
 
     def __str__(self):
         """String representation of tree, calls _ascii_tree()."""
