@@ -2,9 +2,10 @@ import csv
 import random
 import math
 
+
 def read_data(csv_path):
     """Read in the training data from a csv file.
-    
+
     The examples are returned as a list of Python dictionaries, with column names as keys.
     """
     examples = []
@@ -18,20 +19,21 @@ def read_data(csv_path):
                     try:
                         example[k] = float(v)
                     except ValueError:
-                         example[k] = v
+                        example[k] = v
             examples.append(example)
     return examples
 
 
 def train_test_split(examples, test_perc):
     """Randomly data set (a list of examples) into a training and test set."""
-    test_size = round(test_perc*len(examples))
+    test_size = round(test_perc * len(examples))
     shuffled = random.sample(examples, len(examples))
     return shuffled[test_size:], shuffled[:test_size]
 
 
 class TreeNodeInterface():
     """Simple "interface" to ensure both types of tree nodes must have a classify() method."""
+
     def classify(self, example):
         pass
 
@@ -50,7 +52,7 @@ class DecisionNode(TreeNodeInterface):
             child_ge: DecisionNode or LeafNode representing examples with test_attr_name
                 values that are greater than or equal to test_attr_threshold
             child_miss: DecisionNode or LeafNode representing examples that are missing a
-                value for test_attr_name                 
+                value for test_attr_name
         """
         self.test_attr_name = test_attr_name
         self.test_attr_threshold = test_attr_threshold
@@ -60,7 +62,7 @@ class DecisionNode(TreeNodeInterface):
 
     def classify(self, example):
         """Classify an example based on its test attribute value.
-        
+
         Args:
             example: a dictionary { attr name -> value } representing a data instance
 
@@ -96,7 +98,7 @@ class LeafNode(TreeNodeInterface):
 
     def classify(self, example):
         """Classify an example.
-        
+
         Args:
             example: a dictionary { attr name -> value } representing a data instance
 
@@ -133,19 +135,19 @@ class DecisionTree:
     def entropy(self, dict, total):
         # 1e-15 for 0 cases
         total += 1e-15
-        return -(dict['red'] / total * math.log((dict['red']+1e-15) / total, 2) +
-                 dict['light blue'] / total * math.log((dict['light blue']+1e-15) / total, 2) +
-                 dict['medium blue'] / total * math.log((dict['medium blue']+1e-15) / total, 2) +
-                 dict['wicked blue'] / total * math.log((dict['wicked blue']+1e-15) / total, 2))
+        return -(dict['red'] / total * math.log((dict['red'] + 1e-15) / total, 2) +
+                 dict['light blue'] / total * math.log((dict['light blue'] + 1e-15) / total, 2) +
+                 dict['medium blue'] / total * math.log((dict['medium blue'] + 1e-15) / total, 2) +
+                 dict['wicked blue'] / total * math.log((dict['wicked blue'] + 1e-15) / total, 2))
 
     def learn_tree(self, examples):
         """Build the decision tree based on entropy and information gain.
-        
+
         Args:
             examples: training data to use for tree learning, as a list of dictionaries.  The
                 attribute stored in self.id_name is ignored, and self.class_name is consided
                 the class label.
-        
+
         Returns: a DecisionNode or LeafNode representing the tree
         """
         #
@@ -170,8 +172,8 @@ class DecisionTree:
         # Go through attribute to find the best IG
         IG, IG_thres = 0, 0
         minimum_r, minimum_l = 0, 0
-        IG_attr = 'town'    # doesn't need to be town
-        for key in examples[0]:     # keys: attributes, values: values of attributes
+        IG_attr = 'town'  # doesn't need to be town
+        for key in examples[0]:  # keys: attributes, values: values of attributes
             # Check if attribute is not a place name
             if (type(examples[0][key]) == float or type(examples[0][key]) is None) and key != self.id_name:
                 # calculate segmentation value
@@ -184,9 +186,10 @@ class DecisionTree:
                 seg = (top - bottom) / 25
 
                 # find best IG threshold for each attribute
-                p_l, p_r = 0, 0        # probabilities smaller and greater
                 thres = bottom - seg
                 for i in range(25):
+                    p_l, p_r = 0, 0  # probabilities smaller and greater
+
                     thres += seg
                     # Calculate IG and entropy of each seg
                     l = {'red': 0, 'light blue': 0, 'medium blue': 0, 'wicked blue': 0}  # classes smaller
@@ -202,19 +205,20 @@ class DecisionTree:
                     if p_r != 0 and p_l != 0:
                         entropy_l = self.entropy(l, p_l)
                         entropy_r = self.entropy(r, p_r)
+
                         # Check minimum leaf count
                         check = IG
                         IG = max(IG, entropy_parent -
-                                 (p_l/(p_l+p_r) * entropy_l +
-                                  p_r/(p_l+p_r) * entropy_r))
+                                 (p_l / (p_l + p_r) * entropy_l +
+                                  p_r / (p_l + p_r) * entropy_r))
                         # if current split is better
-                        if IG != check:
+                        if IG != check and (p_l > self.min_leaf_count and p_r > self.min_leaf_count):
                             IG_thres = thres
                             IG_attr = key
                             minimum_l, minimum_r = p_l, p_r
 
         # if data instances is less then minimum leaf
-        if minimum_l <= self.min_leaf_count or minimum_r <= self.min_leaf_count or total <= self.min_leaf_count:
+        if IG_attr == 'town' or total <= self.min_leaf_count:
             return LeafNode(majority, pred_class_count, total)
         # Splitting dataset
         # create 2 new dicts
@@ -230,7 +234,7 @@ class DecisionTree:
             if type(dict[IG_attr]) is None:
                 examples_m.append(dict)
 
-        return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r), None   )
+        return DecisionNode(IG_attr, IG_thres, self.learn_tree(examples_l), self.learn_tree(examples_r), None)
         # return None  # fix this line!
 
     def classify(self, example):
@@ -256,31 +260,32 @@ class DecisionTree:
         """Super high-tech tree-printing ascii-art madness."""
         indent = 7  # adjust this to decrease or increase width of output 
         if type(node) == LeafNode:
-            return [""], "leaf {} {}/{}={:.2f}".format(node.pred_class, node.pred_class_count, node.total_count, node.prob), [""]
+            return [""], "leaf {} {}/{}={:.2f}".format(node.pred_class, node.pred_class_count, node.total_count,
+                                                       node.prob), [""]
         else:
             child_ln_bef, child_ln, child_ln_aft = self._ascii_tree(node.child_ge)
-            lines_before = [ " "*indent*2 + " " + " "*indent + line for line in child_ln_bef ]
-            lines_before.append(" "*indent*2 + u'\u250c' + " >={}----".format(node.test_attr_threshold) + child_ln)
-            lines_before.extend([ " "*indent*2 + "|" + " "*indent + line for line in child_ln_aft ])
+            lines_before = [" " * indent * 2 + " " + " " * indent + line for line in child_ln_bef]
+            lines_before.append(" " * indent * 2 + u'\u250c' + " >={}----".format(node.test_attr_threshold) + child_ln)
+            lines_before.extend([" " * indent * 2 + "|" + " " * indent + line for line in child_ln_aft])
 
             line_mid = node.test_attr_name
 
             child_ln_bef, child_ln, child_ln_aft = self._ascii_tree(node.child_lt)
-            lines_after = [ " "*indent*2 + "|" + " "*indent + line for line in child_ln_bef ]
-            lines_after.append(" "*indent*2 + u'\u2514' + "- <{}----".format(node.test_attr_threshold) + child_ln)
-            lines_after.extend([ " "*indent*2 + " " + " "*indent + line for line in child_ln_aft ])
+            lines_after = [" " * indent * 2 + "|" + " " * indent + line for line in child_ln_bef]
+            lines_after.append(" " * indent * 2 + u'\u2514' + "- <{}----".format(node.test_attr_threshold) + child_ln)
+            lines_after.extend([" " * indent * 2 + " " + " " * indent + line for line in child_ln_aft])
 
             return lines_before, line_mid, lines_after
 
 
 def confusion4x4(labels, vals):
     """Create an normalized predicted vs. actual confusion matrix for four classes."""
-    n = sum([ v for v in vals.values() ])
-    abbr = [ "".join(w[0] for w in lab.split()) for lab in labels ]
-    s =  ""
+    n = sum([v for v in vals.values()])
+    abbr = ["".join(w[0] for w in lab.split()) for lab in labels]
+    s = ""
     s += " actual ___________________________________  \n"
     for ab, labp in zip(abbr, labels):
-        row = [ vals.get((labp, laba), 0)/n for laba in labels ]
+        row = [vals.get((labp, laba), 0) / n for laba in labels]
         s += "       |        |        |        |        | \n"
         s += "  {:^4s} | {:5.2f}  | {:5.2f}  | {:5.2f}  | {:5.2f}  | \n".format(ab, *row)
         s += "       |________|________|________|________| \n"
@@ -314,17 +319,17 @@ if __name__ == '__main__':
         actual = example[class_attr_name]
         pred, prob = tree.classify(example)
         print("{:30} pred {:15} ({:.2f}), actual {:15} {}".format(example[id_attr_name] + ':',
-                                                            "'" + pred + "'", prob,
-                                                            "'" + actual + "'",
-                                                            '*' if pred == actual else ''))
+                                                                  "'" + pred + "'", prob,
+                                                                  "'" + actual + "'",
+                                                                  '*' if pred == actual else ''))
         if pred == actual:
             correct += 1
         if abs(ordering.index(pred) - ordering.index(actual)) < 2:
             almost += 1
         test_act_pred[(actual, pred)] = test_act_pred.get((actual, pred), 0) + 1
 
-    print("\naccuracy: {:.2f}".format(correct/len(test_examples)))
-    print("almost:   {:.2f}\n".format(almost/len(test_examples)))
+    print("\naccuracy: {:.2f}".format(correct / len(test_examples)))
+    print("almost:   {:.2f}\n".format(almost / len(test_examples)))
     print(confusion4x4(['red', 'light blue', 'medium blue', 'wicked blue'], test_act_pred))
     print(tree)  # visualize the tree in sweet, 8-bit text
 
